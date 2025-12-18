@@ -9,10 +9,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Deploy to Railway
-        run: |
-          echo "Deployment is handled automatically by Railway."
-          echo "CD Pipeline Status: SUCCESS"
+        uses: bervProject/railway-deploy@main
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: "forum-api-project-extended"
