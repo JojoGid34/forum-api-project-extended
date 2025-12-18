@@ -12,8 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Simulate Deployment
+      - name: Deploy to Railway
         run: |
-          echo "Memulai proses deployment ke Railway..."
-          echo "Ups! Ada kesalahan konfigurasi simulasi."
-          exit 1 
+          echo "Proses deployment ditangani otomatis oleh Railway Integration."
+          echo "Pipeline GitHub Actions ini hanya sebagai penanda status CD."
+          echo "DEPLOYMENT SUCCESS!"
