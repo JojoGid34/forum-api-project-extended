@@ -14,6 +14,6 @@ jobs:
 
       - name: Deploy to Railway
         run: |
-          echo "Proses deployment ditangani otomatis oleh Railway Integration."
-          echo "Pipeline GitHub Actions ini hanya sebagai penanda status CD."
-          echo "DEPLOYMENT SUCCESS!"
+          echo "Deploying..."
+          # Kita paksa error biar merah
+          exit 1
