@@ -85,7 +85,7 @@ const createServer = async (container) => {
       // 2. Translate Domain Error
       const translatedError = DomainErrorTranslator.translate(response);
 
-      // 3. Handle ClientError (Error validasi, dsb -> 400, 401, 404)
+      // 3. Handle ClientError
       if (translatedError instanceof ClientError) {
         const newResponse = h.response({
           status: 'fail',
