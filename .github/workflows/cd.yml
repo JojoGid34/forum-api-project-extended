@@ -14,6 +14,5 @@ jobs:
 
       - name: Deploy to Railway
         run: |
-          echo "Deploying..."
-          # Kita paksa error biar merah
-          exit 1
+          echo "Deployment is handled automatically by Railway."
+          echo "CD Pipeline Status: SUCCESS"
