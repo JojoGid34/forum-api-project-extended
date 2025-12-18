@@ -15,24 +15,28 @@ const createServer = async (container) => {
     port: process.env.PORT || 5000,
   });
 
-  await server.register([
-    {
+  // --- REGISTER EXTERNAL PLUGINS ---
+  if (process.env.NODE_ENV !== 'test') {
+    await server.register({
       plugin: HapiRateLimit,
       options: {
-        userLimit: 90, // Maksimal 90 request
-        userCache: {
-          expiresIn: 60000, // Per 1 menit (60 detik)
-        },
-        pathLimit: false, // Hitung limit per user (IP), bukan per path
+        userLimit: 90,
+        userCache: { expiresIn: 60000 },
+        pathLimit: false,
         trustProxy: true,
         ipWhitelist: [],
       },
-    },
+    });
+  }
+
+  // JWT tetap harus jalan
+  await server.register([
     {
       plugin: Jwt,
     },
   ]);
 
+  // --- AUTH STRATEGY ---
   server.auth.strategy('forumapi_jwt', 'jwt', {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
@@ -49,6 +53,7 @@ const createServer = async (container) => {
     }),
   });
 
+  // --- REGISTRASI PLUGIN INTERNAL ---
   await server.register([
     {
       plugin: users,
@@ -64,13 +69,23 @@ const createServer = async (container) => {
     },
   ]);
 
-  // Middleware Error Handling
+  // --- ERROR HANDLING (PERBAIKAN LOGIKA) ---
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
     if (response instanceof Error) {
+      // 1. Handle Rate Limit Error (429) dari Plugin
+      if (response.output && response.output.statusCode === 429) {
+        return h.response({
+          status: 'fail',
+          message: 'Terlalu banyak permintaan, silakan coba lagi nanti.',
+        }).code(429);
+      }
+
+      // 2. Translate Domain Error
       const translatedError = DomainErrorTranslator.translate(response);
 
+      // 3. Handle ClientError (Error validasi, dsb -> 400, 401, 404)
       if (translatedError instanceof ClientError) {
         const newResponse = h.response({
           status: 'fail',
@@ -80,17 +95,17 @@ const createServer = async (container) => {
         return newResponse;
       }
 
-      if (!translatedError.isServer) {
+      // 4. Handle Native Hapi Errors (seperti 404 Route Not Found)
+      // Jangan diubah jadi 500, biarkan Hapi yang handle
+      if (response.isBoom && response.output.statusCode < 500) {
         return h.continue;
       }
 
-      if (response.output && response.output.statusCode === 429) {
-        return h.response({
-          status: 'fail',
-          message: 'Terlalu banyak permintaan, silakan coba lagi nanti.',
-        }).code(429);
-      }
+      // 5. Handle ServerError (500)
+      // Debug: Cetak error asli ke terminal untuk mempermudah fix jika ada bug lain
+      console.error(response);
 
+      // Return Custom JSON 500
       const newResponse = h.response({
         status: 'error',
         message: 'terjadi kegagalan pada server kami',
