@@ -10,7 +10,7 @@ Aplikasi ini menerapkan **Continuous Deployment** menggunakan **Railway** (Auto 
 
 - **App URL:** [https://forum-api-project-extended-production.up.railway.app](https://forum-api-project-extended-production.up.railway.app)
 - **HTTPS:** Otomatis aktif via Railway.
-- **Limit Access:** File konfigurasi `nginx.conf` (Rate Limit 90req/m) dilampirkan di root repository sesuai instruksi.
+- **Limit Access:** File konfigurasi `nginx.conf` (Rate Limit 90req/m) dilampirkan di root repository sesuai instruksi. Limit Access juga diimplementasikan di level aplikasi menggunakan plugin `hapi-rate-limit`.
 
 ## 🛠️ Tech Stack
 - **Framework:** Hapi.js

@@ -1,5 +1,6 @@
 const Hapi = require('@hapi/hapi');
-const Jwt = require('@hapi/jwt'); // <--- 1. WAJIB IMPORT INI
+const Jwt = require('@hapi/jwt');
+const HapiRateLimit = require('hapi-rate-limit');
 const ClientError = require('../../Commons/exceptions/ClientError');
 const DomainErrorTranslator = require('../../Commons/exceptions/DomainErrorTranslator');
 
@@ -10,18 +11,28 @@ const threads = require('../../Interfaces/http/api/threads');
 
 const createServer = async (container) => {
   const server = Hapi.server({
-    host: process.env.HOST,
-    port: process.env.PORT,
+    host: process.env.HOST || 'localhost',
+    port: process.env.PORT || 5000,
   });
 
-  // --- 2. REGISTRASI PLUGIN EKSTERNAL (JWT) ---
   await server.register([
+    {
+      plugin: HapiRateLimit,
+      options: {
+        userLimit: 90, // Maksimal 90 request
+        userCache: {
+          expiresIn: 60000, // Per 1 menit (60 detik)
+        },
+        pathLimit: false, // Hitung limit per user (IP), bukan per path
+        trustProxy: true,
+        ipWhitelist: [],
+      },
+    },
     {
       plugin: Jwt,
     },
   ]);
 
-  // --- 3. DEFINISI STRATEGY AUTHENTICATION (INI YANG HILANG!) ---
   server.auth.strategy('forumapi_jwt', 'jwt', {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
@@ -38,7 +49,6 @@ const createServer = async (container) => {
     }),
   });
 
-  // --- 4. REGISTRASI PLUGIN APLIKASI ---
   await server.register([
     {
       plugin: users,
@@ -72,6 +82,13 @@ const createServer = async (container) => {
 
       if (!translatedError.isServer) {
         return h.continue;
+      }
+
+      if (response.output && response.output.statusCode === 429) {
+        return h.response({
+          status: 'fail',
+          message: 'Terlalu banyak permintaan, silakan coba lagi nanti.',
+        }).code(429);
       }
 
       const newResponse = h.response({
